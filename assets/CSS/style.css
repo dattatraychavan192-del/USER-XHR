@@ -1,0 +1,9 @@
+.card-header h2{
+    height: 45px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.card{
+    height: 100%;
+}
