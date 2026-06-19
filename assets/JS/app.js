@@ -13,7 +13,19 @@ let userArr = [];
 
 let baseUrl = "https://jsonplaceholder.typicode.com";
 
+function snackbar(msg, icon) {
+  swal.fire({
+    title: msg,
+    icon: icon,
+    timer: 2000,
+  });
+}
+
+const spinner = document.getElementById("spinner");
+
 function fetchUser() {
+  spinner.classList.remove("d-none");
+
   let xhr = new XMLHttpRequest();
   let postUrl = `${baseUrl}/posts`;
   xhr.open("GET", postUrl);
@@ -22,6 +34,10 @@ function fetchUser() {
   xhr.onload = function () {
     userArr = JSON.parse(xhr.response);
     creatCards(userArr.reverse());
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip();
+    });
+    spinner.classList.add("d-none");
   };
 }
 
@@ -33,7 +49,7 @@ function creatCards(eve) {
     result += `
      <div class="col-md-3 my-4" id=${element.id} >
             <div class="card ">
-              <div class="card-header">
+              <div class="card-header"data-toggle="tooltip" data-placement="top" title="${element.title}">
                <h2>${element.title}</h2>
               </div>
               <div class="card-body">
@@ -53,11 +69,15 @@ function creatCards(eve) {
 
 function cardHandalar(eve) {
   eve.preventDefault();
+  spinner.classList.remove("d-none");
+
   let newObj = {
     userId: userId.value,
     title: title.value,
     body: body.value,
   };
+
+  userArr.unshift(newObj);
 
   let xhr = new XMLHttpRequest();
   let postUrl = `${baseUrl}/posts`;
@@ -73,30 +93,29 @@ function cardHandalar(eve) {
 
       div.innerHTML = `
        <div class="card ">
-              <div class="card-header">
+              <div class="card-header" data-toggle="tooltip" data-placement="top" title="${newObj.title}">
                <h2>${newObj.title}</h2>
               </div>
               <div class="card-body">
                 <p>${newObj.body}</p>
               </div>
              <div class="card-footer d-flex justify-content-between">
-              <button class="btn btn-primary btn-sm"  id="edit" onclick = "onEdit(this)" >Edit</button>
-               <button class="btn btn-danger btn-sm"  id="delete" onclick ="removeFun(this)" >Delete</button>
+              <button class="btn btn-primary btn-sm"  onclick = "onEdit(this)" >Edit</button>
+               <button class="btn btn-danger btn-sm"  onclick ="removeFun(this)" >Delete</button>
             </div>
           </div>`;
 
-      swal.fire({
-        title: `User Add with id ${response.id}   successfully`,
-        icon: "success",
-        timer: 800,
-      });
       cardContaier.prepend(div);
       userForm.reset();
+      spinner.classList.add("d-none");
+      snackbar(`User Add with id ${response.id}   successfully`, "success");
     }
   };
 }
 
 function onEdit(ele) {
+  spinner.classList.remove("d-none");
+
   let editId = ele.closest(".col-md-3").id;
   localStorage.setItem("editId", editId);
 
@@ -119,6 +138,14 @@ function onEdit(ele) {
 
       editBtn.classList.add("d-none");
       updatBtn.classList.remove("d-none");
+      spinner.classList.add("d-none");
+
+      userForm.classList.remove("d-none");
+
+      userForm.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     } else {
       cl("something wents wrong");
     }
@@ -126,6 +153,8 @@ function onEdit(ele) {
 }
 
 function onUpdate(eve) {
+  spinner.classList.remove("d-none");
+
   let updateId = localStorage.getItem("editId");
   let updateObj = {
     userId: userId.value,
@@ -156,7 +185,14 @@ function onUpdate(eve) {
 
       editBtn.classList.remove("d-none");
       updatBtn.classList.add("d-none");
+
       userForm.reset();
+      spinner.classList.add("d-none");
+
+      div.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     } else {
       cl("something wents wrong");
     }
@@ -164,17 +200,31 @@ function onUpdate(eve) {
 }
 
 function removeFun(ele) {
-  let removeId = ele.closest(".col-md-3").id;
-  let removeUrl = `${baseUrl}/posts/${removeId}`;
+  Swal.fire({
+    title: "Are you sure?",
+    text: "You want to delete this!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, delete it!",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      let removeId = ele.closest(".col-md-3").id;
+      let removeUrl = `${baseUrl}/posts/${removeId}`;
 
-  let xhr = new XMLHttpRequest();
-  xhr.open("DELETE", removeUrl);
-  xhr.send();
-  xhr.onload = function () {
-    if (xhr.status >= 200 && xhr.status <= 299) {
-      ele.closest(".col-md-3").remove();
+      let xhr = new XMLHttpRequest();
+      xhr.open("DELETE", removeUrl);
+      xhr.send();
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status <= 299) {
+          ele.closest(".col-md-3").remove();
+          spinner.classList.add("d-none");
+          snackbar("Post delete successfully,", "success");
+        }
+      };
     }
-  };
+  });
 }
 
 userForm.addEventListener("submit", cardHandalar);
